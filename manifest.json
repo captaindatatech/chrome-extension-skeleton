@@ -1,0 +1,39 @@
+{
+  "name": "Acme",
+  "short_name": "Acme",
+  "description": "Acme automates the web for you so you can focus on your most important work.",
+  "author": "Acme",
+  "version": "0.0.01",
+  "homepage_url": "https://acme.com",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "src/service.js"
+  },
+  "options_page": "settings/index.html",
+  "action": {
+    // "default_popup": "client/index.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "24": "images/icon24.png",
+      "32": "images/icon32.png"
+    },
+    "default_title": "Acme"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "permissions": ["cookies", "storage", "alarms"],
+  "host_permissions": ["*://*/*"],
+  "web_accessible_resources": [],
+  "externally_connectable": {
+    "matches": [
+      "*://app.acme.com/*",
+      "*://staging.app.acme.com/*",
+      "*://localhost/*",
+      "*://api.acme.com/*",
+      "*://staging.api.acme.com/*"
+    ]
+  }
+}
