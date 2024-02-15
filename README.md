@@ -12,6 +12,10 @@ That being said, let's cover the basics.
 
 # First things first
 
+### 0. Load the unpacked extension
+
+Head over chrome://extensions/ and click "Load unpacked" to start development.
+
 ### 1. Upload your images
 
 Start by changing the icons in the `images` folder.
@@ -41,14 +45,15 @@ The `integrations` object is constructed as is:
   "account_uid": {
     "integration": "linkedin",
     "baseUrl": "https://www.linkedin.com/",
-    "integrationCookies": {},
+    "requestedCookies": {},
     "cookies": {}
   }
   ... // potentially more account_uid
 }
 ```
 
-This object is compatible with multiple accounts and integrations should you need to fetch cookies from more than one source. We'll take `LinkedIn` in all of our examples to simplify.
+This object is compatible with multiple accounts and integrations should you need to fetch cookies from more than one source.
+We'll take `LinkedIn` in all of our examples to simplify.
 
 ### 4. Update your API code
 
@@ -62,4 +67,10 @@ Note that we've created an `alarm` called `updateToken` to make sure to refresh 
 
 Make sure to uncomment production variables and to comment Local variables.
 
-###
+### 2. Adapt your code :)
+
+You should probably remove the "settings" folder as it's mostly useless, you just want cookies to be up-to-date.
+
+If you don't need it, remove it from the `manifest.json` file too.
+
+### 3. Zip & publish!

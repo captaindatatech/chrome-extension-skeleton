@@ -8,30 +8,24 @@
 const WEB_APP_URL = "http://localhost:4200/";
 const API_URL = "http://localhost:5000";
 
-// General
-const LI_BASE_URL = "https://www.linkedin.com/";
-
 /**
- * Updates tokens.
+ * Updates tokens from the Chrome Local Storage.
  */
 const updateTokensProcess = async (response) => {
   try {
     for (const account_uid in response.integrations) {
       if (account_uid) {
-        const integration = response.integrations[account_uid].integration;
-        const cookies = response.integrations[account_uid].cookies;
-
-        await updateCookies(
-          integration,
+        return await updateCookies(
+          response.integrations[account_uid].integration,
           account_uid,
-          LI_BASE_URL,
-          cookies,
+          response.integrations[account_uid].baseUrl,
+          response.integrations[account_uid].cookies,
           response.integrations
         );
       }
     }
   } catch (err) {
-    console.log(err);
+    console.log("Error updating tokens:", err);
   }
 };
 
@@ -54,14 +48,17 @@ async function onMessageExternal(request, sender, sendResponse) {
           request.integration,
           request.baseUrl,
           request.requestedCookies,
-          request.cookies,
-          sendResponse
+          request.cookies
         );
 
-        console.log("no cookies", cookies);
         return sendResponse(cookies);
       }
-    } else if (request.message === "msg_fetch_extensionId") {
+    } else if (request.message === "msg_update_cookies") {
+      // Note: this is mostly useless, for local development purposes & debugging
+      const response = await chrome.storage.local.get(["integrations"]);
+      const updatedCookies = await updateTokensProcess(response);
+      return sendResponse(updatedCookies);
+    } else if (request.message === "msg_update_cookies") {
       return sendResponse({
         extensionId: chrome.runtime.id,
       });
@@ -78,6 +75,7 @@ async function onMessageExternal(request, sender, sendResponse) {
 
 /**
  * Get cookies for a specific app (integration) on a baseUrl (domain).
+ * Note: update your client code accordingly.
  * @param {*} integration
  * @param {*} baseUrl
  * @param {*} requestedCookies
@@ -93,11 +91,11 @@ const getCookies = async (
   cookies
 ) => {
   return await new Promise(async (resolve, reject) => {
-    return chrome.cookies.getAll(
+    return await chrome.cookies.getAll(
       {
         url: baseUrl,
       },
-      (cookieObjects) => {
+      async (cookieObjects) => {
         try {
           // For every needed cookies, retrieve the valye from Chrome cookies
           // Note: for Sales Navigator accounts, make sure to require li_at AND li_a cookies
@@ -110,7 +108,6 @@ const getCookies = async (
             }
           }
 
-          console.log("getCookies", cookies);
           let integrations = {};
           try {
             if (account_uid) {
@@ -143,8 +140,6 @@ const getCookies = async (
             resolve({ error: "It appears you are not connected to LinkedIn" });
           }
 
-          console.log("integrations ", integrations);
-          console.log("resolve cookies", cookies);
           resolve({ cookies });
         } catch (err) {
           console.log("Error fetching cookies:", err);
@@ -173,13 +168,13 @@ const updateCookies = async (
   integrations
 ) => {
   return await new Promise(async (resolve, reject) => {
-    try {
-      let freshCookies = {};
-      chrome.cookies.getAll(
-        {
-          url: baseUrl,
-        },
-        async (cookieObjects) => {
+    return await chrome.cookies.getAll(
+      {
+        url: baseUrl,
+      },
+      async (cookieObjects) => {
+        try {
+          let freshCookies = {};
           // Fetching fresh cookies values from Chrome
           for (const key in clientCookies) {
             const cookie = cookieObjects.find((c) => c.name === key);
@@ -189,15 +184,19 @@ const updateCookies = async (
           }
 
           if (JSON.stringify(freshCookies) === "{}") {
-            return resolve(true);
+            resolve({
+              success: true,
+              message: "Cookies are empty, keeping previous values.",
+            });
           } else if (integration === "linkedin" && !("li_at" in freshCookies)) {
-            // useless?
-            return resolve(true);
+            resolve({
+              success: true,
+              message:
+                "li_at does not exist, user might have been disconnected",
+            });
           } else {
             // Note: compares if cookies have changed or not; if they didn't, resolve and skip update
             let haveChanges = false;
-            console.log("fresh cookies", freshCookies);
-            console.log("clientCookies", clientCookies);
             for (const key in freshCookies) {
               if (!(key in clientCookies)) {
                 haveChanges = true;
@@ -214,7 +213,7 @@ const updateCookies = async (
             }
 
             if (!haveChanges) {
-              return resolve(true);
+              resolve({ success: true, number_changes: 0 });
             }
 
             if (account_uid) {
@@ -223,8 +222,6 @@ const updateCookies = async (
                 baseUrl,
                 cookies: freshCookies,
               };
-
-              console.log("updated integrations object", integrations);
 
               chrome.storage.local.set(
                 {
@@ -248,19 +245,25 @@ const updateCookies = async (
 
           // Note: if the account_uid does not exist (anymore) you could return a 404 from your API which would mean the account has been removed
           if (data.status === 404) {
-            return await removeCookies(account_uid);
+            await removeCookies(account_uid);
           }
 
-          return resolve(true);
+          resolve({ success: true });
+        } catch (err) {
+          console.log("Error updating cookies:", err);
+          reject(err);
         }
-      );
-    } catch (err) {
-      console.log(err);
-      return reject(err);
-    }
+      }
+    );
   });
 };
 
+/**
+ * Removing cookies :)
+ * @param {*} account_uid
+ * @param {*} integrations
+ * @returns
+ */
 const removeCookies = async (account_uid, integrations) => {
   return await new Promise(async (resolve, reject) => {
     try {
@@ -280,11 +283,11 @@ const removeCookies = async (account_uid, integrations) => {
           );
         }
 
-        return resolve(true);
+        resolve(true);
       });
     } catch (err) {
       console.log(err);
-      return reject(err);
+      reject(err);
     }
   });
 };
@@ -293,16 +296,26 @@ const removeCookies = async (account_uid, integrations) => {
  * Receives interal messages from the app to update various variables.
  * Note: this only used for local testing purposes with the settings/index.html page
  */
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  return await onMessageExternal(request, sender, sendResponse);
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  (async () => {
+    return await onMessageExternal(request, sender, sendResponse);
+  })();
+
+  // Important! Return true to indicate you want to send a response asynchronously
+  return true;
 });
 
 /**
- * Receives messages from the app to update various variables.
+ * Receives messages from your app to update various variables.
  */
 chrome.runtime.onMessageExternal.addListener(
-  async (request, sender, sendResponse) => {
-    return await onMessageExternal(request, sender, sendResponse);
+  (request, sender, sendResponse) => {
+    (async () => {
+      return await onMessageExternal(request, sender, sendResponse);
+    })();
+
+    // Important! Return true to indicate you want to send a response asynchronously
+    return true;
   }
 );
 
@@ -322,8 +335,7 @@ const appRedirect = () => {
  * When user clicks the extension icon.
  */
 chrome.action.onClicked.addListener(async () => {
-  // await updateTokensHandle();
-  //   return appRedirect();  // TODO: you can use the method above to redirect to a URL of your choosing
+  // return appRedirect();  // TODO: you can use this method to redirect to a URL of your choosing, for example
   return chrome.runtime.openOptionsPage();
 });
 

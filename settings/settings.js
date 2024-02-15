@@ -1,5 +1,6 @@
 fetchExtensionId();
 fetchCookiesViaExtension();
+updateCookies();
 
 async function fetchExtensionId() {
   try {
@@ -9,7 +10,6 @@ async function fetchExtensionId() {
         message: "msg_fetch_extensionId",
       },
       (res) => {
-        console.log("Extension ID:", res.extensionId);
         if (res && res.extensionId) {
           document.querySelector(
             "#extensionId"
@@ -43,31 +43,54 @@ async function fetchCookiesViaExtension() {
       {
         message: "msg_fetch_cookies",
         integration: "linkedin",
-        requestedCookies: { li_at: null },
+        requestedCookies: { li_at: null, li_a: null },
         cookies: {},
         baseUrl: "https://www.linkedin.com/",
         account_uid: "b86f2078-dbc9-4b29-a504-d3bbdd3c13fb",
       },
       async (res) => {
         let msg = "";
-        console.log(res);
         if (res) {
           if (res.cookies) {
-            console("Cookies: ", res.cookies);
+            msg = JSON.stringify(res.cookies);
           } else if (res.error) {
             msg = res.error;
-            console.log(res.error);
-          } else {
-            reject(null);
-            return true;
           }
+        } else {
+          msg = JSON.stringify(res);
         }
 
-        msg = JSON.stringify(res);
-        document.querySelector("#linkedin").innerHTML = msg;
+        return (document.querySelector("#linkedin").innerHTML = msg);
       }
     );
   } catch (err) {
     console.log("Error fetching cookies:", err);
+  }
+}
+
+async function updateCookies() {
+  try {
+    chrome.runtime.sendMessage(
+      "jdeppenejblgegpfgdmndabjeccdabhk",
+      {
+        message: "msg_update_cookies",
+      },
+      async (res) => {
+        let msg = "";
+        if (res) {
+          if (res.success) {
+            msg = JSON.stringify(res);
+          } else if (res.error) {
+            msg = res.error;
+          }
+        } else {
+          msg = JSON.stringify(res);
+        }
+
+        return (document.querySelector("#update").innerHTML = msg);
+      }
+    );
+  } catch (err) {
+    console.log("Error updating cookies:", err);
   }
 }

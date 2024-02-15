@@ -11,7 +11,6 @@
   },
   "options_page": "settings/index.html",
   "action": {
-    // "default_popup": "client/index.html",
     "default_icon": {
       "16": "images/icon16.png",
       "24": "images/icon24.png",
