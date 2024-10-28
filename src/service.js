@@ -189,30 +189,32 @@ const updateCookies = async (
               message: "Cookies are empty, keeping previous values.",
             });
           } else if (integration === "linkedin" && !("li_at" in freshCookies)) {
-            if ((!clientCookies || (clientCookies && JSON.stringify(clientCookies) === '{}'))) {
+            if (
+              !clientCookies ||
+              (clientCookies && JSON.stringify(clientCookies) === "{}")
+            ) {
               resolve({
                 success: true,
                 message:
                   "li_at does not exist, user might have been disconnected",
               });
-          } else {
+            } else {
               integrations[accountUid] = {
-                  integration,
-                  baseUrl,
-                  cookies: {},
+                integration,
+                baseUrl,
+                cookies: {},
               };
 
               chrome.storage.local.set(
-                  {
-                      integrations,
-                  },
-                  () => {}
+                {
+                  integrations,
+                },
+                () => {}
               );
 
-              // Allow captain to update account as invalid
+              // Enables Captain Data API to mark the account as invalid (since the cookies are not valid anymore)
               freshCookies = clientCookies;
-          }
-            
+            }
           } else {
             // Note: compares if cookies have changed or not; if they didn't, resolve and skip update
             let haveChanges = false;
