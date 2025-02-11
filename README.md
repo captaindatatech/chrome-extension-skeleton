@@ -67,6 +67,10 @@ Note that we've created an `alarm` called `updateToken` to make sure to refresh 
 
 Make sure to uncomment production variables and to comment Local variables.
 
+If you want to test within the HTML don't forget to update `YOUR_EXTENSION_ID` inside settings > settings.js
+
+Keep in mind that the `settings` folder is intended for testing only.
+
 ### 2. Adapt your code :)
 
 You should probably remove the "settings" folder as it's mostly useless, you just want cookies to be up-to-date.

@@ -2,10 +2,12 @@ fetchExtensionId();
 fetchCookiesViaExtension();
 updateCookies();
 
+const YOUR_EXTENSION_ID = "YOUR_EXTENSION_ID";
+
 async function fetchExtensionId() {
   try {
     chrome.runtime.sendMessage(
-      "jdeppenejblgegpfgdmndabjeccdabhk",
+      YOUR_EXTENSION_ID,
       {
         message: "msg_fetch_extensionId",
       },
@@ -26,7 +28,7 @@ async function fetchExtensionId() {
 function removeExtensionAccount(account) {
   try {
     chrome.runtime.sendMessage(
-      "jdeppenejblgegpfgdmndabjeccdabhk",
+      YOUR_EXTENSION_ID,
       {
         message: "msg_remove_account",
         account_uid: account.uid,
@@ -39,14 +41,14 @@ function removeExtensionAccount(account) {
 async function fetchCookiesViaExtension() {
   try {
     chrome.runtime.sendMessage(
-      "jdeppenejblgegpfgdmndabjeccdabhk",
+      YOUR_EXTENSION_ID,
       {
         message: "msg_fetch_cookies",
         integration: "linkedin",
         requestedCookies: { li_at: null, li_a: null },
         cookies: {},
         baseUrl: "https://www.linkedin.com/",
-        account_uid: "b86f2078-dbc9-4b29-a504-d3bbdd3c13fb",
+        account_uid: "AN_ACCOUNT_UID",
       },
       async (res) => {
         let msg = "";
@@ -71,7 +73,7 @@ async function fetchCookiesViaExtension() {
 async function updateCookies() {
   try {
     chrome.runtime.sendMessage(
-      "jdeppenejblgegpfgdmndabjeccdabhk",
+      YOUR_EXTENSION_ID,
       {
         message: "msg_update_cookies",
       },
